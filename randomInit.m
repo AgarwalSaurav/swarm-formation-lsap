@@ -6,6 +6,7 @@ Sj = intI + (intF - intI).*randn(n, 2);
 
 d0 = intI + (intF - intI).*randn(1,2);
 
+sjG = d0 + Sj;
 %Pi = randi([intI intF], n, 2);
 %Sj = randi([intI intF], n, 2);
 %d0 = randi([intI intF], 1, 2);
