@@ -11,7 +11,7 @@ plt(1).Marker = '+';
 plt(2).Marker = 'o';
 axis equal;
 %axis(axis_limits);
-title('Initial configuration: $+$ - initial pos., o - shape config. ');
+title('\bf Initial configuration: $+$ - initial pos., o - shape config. ');
 xlabel('$X$-axis');
 ylabel('$Y$-axis');
 hold off
