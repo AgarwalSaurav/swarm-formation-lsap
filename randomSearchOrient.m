@@ -1,6 +1,7 @@
+clear all
 
 % Number of robots
-n = 5;
+n = 3;
 intI = -10;
 intF = 15;
 pi = intI + (intF - intI).*randn(n, 2);
@@ -16,7 +17,7 @@ d0 = randi([intI intF], 1, 2);
 costMat = zeros(n * n, 3);
 for i = 1:n
   for j = 1:n
-    costMat((i - 1) * n + j, :) = getScaleCoeff(pi(i, :), sj(j, :), d0);
+    costMat((i - 1) * n + j, :) = getOrientCoeff(pi(i, :), sj(j, :), d0);
   end
 end
 optVal = Inf;
@@ -27,19 +28,20 @@ for i = 1:length(allPerms)
   newPerm = allPerms(i, :);
   rn = 1:n;
   sumCoeff = sum(costMat((rn - 1) * n + newPerm(rn), :));
-  plotAlpha = 0:0.1:2;
-  plotVal = polyval(sumCoeff, plotAlpha);
-  plot(plotAlpha, plotVal);
+  plot_t = -5:0.1:5;
+  plotVal = polyval(sumCoeff, plot_t);
+  plotVal = plotVal./(1 + plot_t.^2);
+  plot(plot_t, plotVal);
   hold on
-  [val, alpha] = minQuad(sumCoeff);
+  [val, tval] = getMinOrient(sumCoeff);
   if val < optVal
     optVal = val;
-    optAlpha = alpha;
+    opt_tVal = tval;
     optPerm = newPerm;
   end
 end
 costMatVal = zeros(n * n, 1);
-costMatVal = getCostVal(costMat, 2);
+costMatVal = getOrientVal(costMat, 2);
 
 % Incidence matrix
 A = zeros(2*n, n^2);
@@ -48,18 +50,18 @@ for i = 1:n
   A(n+1:end, (i-1)*n+1:i*n) = eye(n);
 end
 
-
+A = A(1:end-1, :);
 options = optimoptions('linprog','Algorithm','dual-simplex');
 
-b = ones(2 * n, 1);
+b = ones(2 * n - 1, 1);
 lb = double(zeros(n * n, 1));
 ub = double(ones(n * n, 1));
 [x fval] = linprog(costMatVal, [], [], A, b, lb, ub, options)
 costNet = costMat.*x;
 polyCost = sum(costNet);
-[~, optAlpha] = minQuad(polyCost);
+[cc, min_tVal] = getMinOrient(polyCost);
 
-costMatVal = getCostVal(costMat, optAlpha);
+costMatVal = getOrientVal(costMat, min_tVal);
 
 [xD, fvalD] = linprog(-b, A', costMatVal,[],[],lb, [], options)
 bD = [-b; zeros(n * n, 1)];

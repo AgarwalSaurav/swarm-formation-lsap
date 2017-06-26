@@ -1,6 +1,7 @@
+clear all
 
 % Number of robots
-n = 5;
+n = 3;
 intI = -10;
 intF = 15;
 pi = intI + (intF - intI).*randn(n, 2);
@@ -16,7 +17,7 @@ d0 = randi([intI intF], 1, 2);
 costMat = zeros(n * n, 3);
 for i = 1:n
   for j = 1:n
-    costMat((i - 1) * n + j, :) = getScaleCoeff(pi(i, :), sj(j, :), d0);
+    costMat((i - 1) * n + j, :) = getOrientCoeff(pi(i, :), sj(j, :), d0);
   end
 end
 optVal = Inf;
@@ -27,19 +28,22 @@ for i = 1:length(allPerms)
   newPerm = allPerms(i, :);
   rn = 1:n;
   sumCoeff = sum(costMat((rn - 1) * n + newPerm(rn), :));
-  plotAlpha = 0:0.1:2;
-  plotVal = polyval(sumCoeff, plotAlpha);
-  plot(plotAlpha, plotVal);
+  plot_pi = -3.1412:0.01:3.1412;
+  plot_t = tan(plot_pi/2);
+  plotVal = polyval(sumCoeff, plot_t);
+  plotVal = plotVal./(1 + plot_t.^2);
+  %plotVal = plotVal;
+  plot(plot_pi, plotVal);
   hold on
-  [val, alpha] = minQuad(sumCoeff);
+  [val, tval] = getMinOrient(sumCoeff);
   if val < optVal
     optVal = val;
-    optAlpha = alpha;
+    opt_tVal = tval;
     optPerm = newPerm;
   end
 end
 costMatVal = zeros(n * n, 1);
-costMatVal = getCostVal(costMat, 2);
+costMatVal = getOrientVal(costMat, 2);
 
 % Incidence matrix
 A = zeros(2*n, n^2);
@@ -48,30 +52,36 @@ for i = 1:n
   A(n+1:end, (i-1)*n+1:i*n) = eye(n);
 end
 
-
+A = A(1:end-1, :);
 options = optimoptions('linprog','Algorithm','dual-simplex');
 
-b = ones(2 * n, 1);
+b = ones(2 * n - 1, 1);
 lb = double(zeros(n * n, 1));
 ub = double(ones(n * n, 1));
 [x fval] = linprog(costMatVal, [], [], A, b, lb, ub, options)
 costNet = costMat.*x;
 polyCost = sum(costNet);
-[~, optAlpha] = minQuad(polyCost);
+[cc, min_tVal] = getMinOrient(polyCost);
 
-costMatVal = getCostVal(costMat, optAlpha);
+costMatVal = getOrientVal(costMat, min_tVal);
 
-[xD, fvalD] = linprog(-b, A', costMatVal,[],[],lb, [], options)
-bD = [-b; zeros(n * n, 1)];
-AD = [A', eye(n * n, n * n)];
-[xD1, fvalD1] = linprog(bD, [], [], AD, costMatVal,zeros(n * n + 2 * n,1), [], options)
-bscMat = AD(:, xD1 ~= 0);
-nonMat = AD(:, xD1 == 0);
+bscMat = A(:, x ~= 0);
+nonMat = A(:, x == 0);
+bscMat = [bscMat, nonMat(:, 1:n-1)];
+nonMat(:, 1:n-1) = [];
 
-CB = bD(xD1 ~= 0);
-CN = bD(xD1 == 0);
+CB = costMat(x ~= 0, :);
+CN = costMat(x == 0, :);
+CB = [CB; CN(1:n-1, :)];
+CN(1:n-1, :) = [];
 for kk = 1:10
-  redCost = CN' - CB'*inv(bscMat)*nonMat;
+  redCost_coeff = CN - (CB'*inv(bscMat)*nonMat)';
+  redCost = zeros(size(redCost_coeff, 1), 1);
+  redCost_tVal = zeros(size(redCost_coeff, 1), 1);
+  for i=1:size(redCost_coeff, 1);
+    [redCost(i) redCost_tVal(i)] = getMinOrient(redCost_coeff(i, :));
+  end
+
   [minRedCost, redIdx] = min(redCost);
   minRedCost
   if(minRedCost >= 0)
@@ -82,12 +92,9 @@ for kk = 1:10
   invBscMat = inv(bscMat);
   BinvU = invBscMat * uCol;
   flag = 0;
-  for i = 1:n
-    for j = 1:n
-      idx = (i - 1) * n + j;
+  for idx = 1:(2*n-1)
       if(BinvU(idx) > 0)
-        polyCoeff = invBscMat(idx, :) * costMat
-        newRatio = -minQuad(polyCoeff) / BinvU(idx);
+        newRatio =  -invBscMat(idx, :) * b / BinvU(idx);
         if(flag == 0)
           minRatio = newRatio;
           minIdx = idx;
@@ -98,7 +105,6 @@ for kk = 1:10
           minIdx = idx;
         end
       end
-    end 
   end
   temp = nonMat(:, redIdx);
   nonMat(:, redIdx) = bscMat(:, minIdx);
