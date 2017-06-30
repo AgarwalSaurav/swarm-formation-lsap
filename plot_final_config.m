@@ -23,7 +23,7 @@ end
 axis equal;
 axis(axis_limits);
 
-title('Final configuration: $+$ - initial pos., $\times$ - final pos., o - shape config. ');
+title('\bf Final configuration: $+$ - initial pos., $\times$ - final pos., o - shape config. ');
 xlabel('$X$-axis');
 ylabel('$Y$-axis');
 for i = 1:n

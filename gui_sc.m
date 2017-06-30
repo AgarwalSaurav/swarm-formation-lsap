@@ -44,12 +44,12 @@ for i = 1:n
 end
 sjGT = [sjG; sjG(1,:)];
 hPolyPi = line(sjGT(:,1), sjGT(:, 2), 'Color', [0.8500    0.3250    0.0980]);
-waitfor(msgbox('Proceed to compute optimal assignment and translation?'));
+waitfor(msgbox('Proceed to compute optimal assignment and scale?'));
 d0 = sjG(1, :);
 Sj = sjG - d0;
-[optPerm, opt_d, optCost] = hungarianTranslation(Pi, Sj);
+[optPerm, optAlpha, optCost] = hungarianScale(Pi, Sj, d0)
 
-fjG = Sj + opt_d;
+fjG = optAlpha.*Sj + d0;
 Gi = fjG;
 Gi = Gi(optPerm, :);
 fjG = Gi;
