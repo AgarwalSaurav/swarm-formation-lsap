@@ -10,7 +10,7 @@ for i = 1:n
 end
 optVal = Inf;
 optCost = Inf;
-allPerms = perms(1:n);
+allPerms = perms(1:n)
 
 hPlotScaleCost = figure;
 figure(hPlotScaleCost);
@@ -20,9 +20,9 @@ for i = 1:length(allPerms)
   newPerm = allPerms(i, :);
   rn = 1:n;
   sumCoeff = sum(costMat((rn - 1) * n + newPerm(rn), :));
-  plotAlpha = 0:0.1:2;
+  plotAlpha = 0:0.1:3;
   plotVal = polyval(sumCoeff, plotAlpha);
-  plot(plotAlpha, plotVal, 'LineWidth', 2);
+  plot(plotAlpha, plotVal, 'LineWidth', 4);
   [val, alpha] = minQuad(sumCoeff);
   if val < optVal
     optVal = val;
@@ -33,13 +33,17 @@ for i = 1:length(allPerms)
 end 
 set(gcf,'render','painters')
 set(0,'defaulttextinterpreter','latex')
+set(gcf,'units','normalized','outerposition',[0 0 1 1])
 set(gca,'TickLabelInterpreter', 'latex');
-title('\bf Plot of cost curves for all permutations of assignment', 'FontSize', 14);
-xlabel('Scale parameter ($\alpha$)', 'FontSize', 12)
-ylabel('Cost as sum of square of distances', 'FontSize', 12)
+set(gca,'fontsize',32)
+set(gcf,'color','white')
+%title('\bf Plot of cost curves for all permutations of assignment', 'FontSize', 14);
+xlabel('Scale parameter ($\alpha$)')
+ylabel('Cost as sum of squared distances, $\mathcal C_\alpha(\alpha, \mathbf{X})$')
 
 if(savePlots)
   print -depsc2 plot_scaleCostCurves_perms.eps
+  system('epstopdf plot_scaleCostCurves_perms.eps')
   print -dpdf plot_scaleCostCurves_perms.pdf 
 end
 end
